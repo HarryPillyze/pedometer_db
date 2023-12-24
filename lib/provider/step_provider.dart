@@ -1,7 +1,6 @@
 import 'package:pedometer/pedometer.dart';
 import 'package:pedometer_db/model/step.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
 
 final String tableName = 'steps';
 
@@ -13,7 +12,7 @@ class StepProvider {
 
   Future initDatabase() async {
     var databasesPath = await getDatabasesPath();
-    String path = join(databasesPath, 'pedometer_db.db');
+    String path = "$databasesPath/pedometer_db.db";
     db = await openDatabase(
       path,
       version: 1,
