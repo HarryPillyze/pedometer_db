@@ -73,7 +73,7 @@ class StepProvider {
       }
     }
 
-    print("insertData delta: ${delta_steps}, steps: ${steps}, timestamp: $timestamp");
+    print("insertData delta: ${delta_steps}, steps: ${steps}, lastStep: ${lastStep?.steps}");
 
     return await db?.insert(
       tableName,  // table name
@@ -95,8 +95,12 @@ class StepProvider {
 
     Step? firstStep;
     Step? lastStep;
+    bool firstNoExist = false;
+    bool lastNoExist = false;
+
     if(firstMaps != null && firstMaps.isEmpty) {
       //db상 첫번째 데이터를 가져온다
+      firstNoExist = true;
       firstMaps = await db?.rawQuery('SELECT * from $tableName limit 1');
     }
 
@@ -105,12 +109,16 @@ class StepProvider {
     }
     if(lastMaps != null && lastMaps.isEmpty) {
       //db상 마지막 데이터를 가져온다
+      lastNoExist = true;
       lastMaps = await db?.rawQuery('SELECT * from $tableName ORDER BY id desc limit 1');
     }
     if(lastMaps != null && lastMaps.isNotEmpty) {
       lastStep = Step.fromMap(lastMaps.first);
     }
     print("lastStep: ${lastStep?.steps}, fristStep: ${firstStep?.steps}");
+    //값 없을때 예상값 조회 시간 보정
+    if(firstNoExist) { startTime = firstStep?.timestamp ?? startTime; }
+    if(lastNoExist) { endTime = lastStep?.timestamp ?? endTime; }
 
     int realDataStep = (lastStep?.steps ?? 0) - (firstStep?.steps ?? 0);
     int realDataTimestamp = (lastStep?.timestamp ?? 0) - (firstStep?.timestamp ?? 0);

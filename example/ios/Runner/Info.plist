@@ -45,5 +45,8 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+    <key>NSMotionUsageDescription</key>
+    <string>This application tracks your steps</string>
 </dict>
 </plist>
