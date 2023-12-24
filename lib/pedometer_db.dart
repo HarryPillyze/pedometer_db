@@ -7,10 +7,6 @@
 
 import 'package:pedometer_db/provider/step_provider.dart';
 
-import 'pedometer_db_platform_interface.dart';
-// import 'package:permission_handler/permission_handler.dart';
-import 'package:pedometer/pedometer.dart';
-import 'package:sqflite/sqflite.dart';
 
 class PedometerDb {
   StepProvider? stepProvider;
