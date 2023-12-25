@@ -7,6 +7,8 @@ PODS:
     - Flutter
   - pedometer (0.0.1):
     - Flutter
+  - pedometer_db (0.0.1):
+    - Flutter
   - permission_handler_apple (9.1.1):
     - Flutter
   - sqflite (0.0.3):
@@ -17,6 +19,7 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - pedometer (from `.symlinks/plugins/pedometer/ios`)
+  - pedometer_db (from `.symlinks/plugins/pedometer_db/ios`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - sqflite (from `.symlinks/plugins/sqflite/ios`)
 
@@ -31,6 +34,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/integration_test/ios"
   pedometer:
     :path: ".symlinks/plugins/pedometer/ios"
+  pedometer_db:
+    :path: ".symlinks/plugins/pedometer_db/ios"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
   sqflite:
@@ -41,6 +46,7 @@ SPEC CHECKSUMS:
   FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
   integration_test: 13825b8a9334a850581300559b8839134b124670
   pedometer: 381969883680ade42559782cc41a3bbd453d8234
+  pedometer_db: 02964705195dad2d5e0e4b5b7d6e65e3efd7366a
   permission_handler_apple: e76247795d700c14ea09e3a2d8855d41ee80a2e6
   sqflite: 31f7eba61e3074736dff8807a9b41581e4f7f15a
 

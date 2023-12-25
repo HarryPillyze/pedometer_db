@@ -1,6 +1,6 @@
 name: pedometer_db
 description: "pedometer data query by startTime, endTime"
-version: 0.0.2
+version: 0.0.3
 homepage: https://github.com/rupy1014/pedometer_db
 repository: https://github.com/rupy1014/pedometer_db
 
@@ -43,8 +43,11 @@ flutter:
     # then add platforms following the instruction here:
     # https://flutter.dev/docs/development/packages-and-plugins/developing-packages#plugin-platforms
     # -------------------
-      some_platform:
-        pluginClass: somePluginClass
+      android:
+        package: com.example.pedometer_db
+        pluginClass: PedometerDbPlugin
+      ios:
+        pluginClass: PedometerDbPlugin
     # -------------------
 
   # To add assets to your plugin package, add an assets section, like this:

@@ -5,20 +5,33 @@
 // platforms in the `pubspec.yaml` at
 // https://flutter.dev/docs/development/packages-and-plugins/developing-packages#plugin-platforms.
 
+import 'dart:io';
+
 import 'package:pedometer_db/provider/step_provider.dart';
 
+import 'package:flutter/services.dart';
+
+import 'pedometer_db_method_channel.dart';
 
 class PedometerDb {
+
+  // static const EventChannel _iosChannel = const EventChannel('ios_step_count');
+
+  MethodChannelPedometerDb? _channelPedometerDb;
   StepProvider? stepProvider;
 
 
   initPlatformState() async {
     stepProvider = StepProvider();
+    _channelPedometerDb = MethodChannelPedometerDb();
     await stepProvider?.initDatabase();
     await stepProvider?.initStepCountStream();
   }
 
   Future<int> queryPedometerData(int startTime, int endTime) async {
+    if(Platform.isIOS) {
+      return await _channelPedometerDb?.queryPedometerDataFromOS(startTime, endTime) ?? 0;
+    }
     return await stepProvider?.queryPedometerData(startTime, endTime) ?? 0;
   }
 }
