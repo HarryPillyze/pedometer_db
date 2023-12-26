@@ -35,7 +35,7 @@ class _MyAppState extends State<MyApp> {
       Permission.activityRecognition
     ].request();
 
-    _pedometerDB.initPlatformState();
+    // _pedometerDB.initPlatformState();
   }
 
   @override

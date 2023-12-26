@@ -20,13 +20,20 @@ class PedometerDb {
   MethodChannelPedometerDb? _channelPedometerDb;
   StepProvider? stepProvider;
 
-
-  initPlatformState() async {
+  PedometerDb() {
     stepProvider = StepProvider();
     _channelPedometerDb = MethodChannelPedometerDb();
-    await stepProvider?.initDatabase();
-    await stepProvider?.initStepCountStream();
+    stepProvider?.initDatabase();
+    stepProvider?.initStepCountStream();
   }
+
+
+  // initPlatformState() async {
+  //   stepProvider = StepProvider();
+  //   _channelPedometerDb = MethodChannelPedometerDb();
+  //   await stepProvider?.initDatabase();
+  //   await stepProvider?.initStepCountStream();
+  // }
 
   Future<int> queryPedometerData(int startTime, int endTime) async {
     if(Platform.isIOS) {
