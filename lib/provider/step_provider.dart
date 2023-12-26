@@ -170,6 +170,6 @@ extension StepPedometer on StepProvider {
   Future<void> _onStepDeltaSaveToDB(StepCount event) async {
 
     int? index = await insertData(event);
-    print("*** step : ${event.steps}, ${event.timeStamp}, $index");
+    print("*** insertData : ${event.steps}, ${event.timeStamp}, $index");
   }
 }

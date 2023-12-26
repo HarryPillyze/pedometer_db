@@ -14,31 +14,20 @@ import 'package:flutter/services.dart';
 import 'pedometer_db_method_channel.dart';
 
 class PedometerDb {
+  final _channelPedometerDb = MethodChannelPedometerDb();
+  final _stepProvider = StepProvider();
 
-  // static const EventChannel _iosChannel = const EventChannel('ios_step_count');
 
-  MethodChannelPedometerDb? _channelPedometerDb;
-  StepProvider? stepProvider;
-
-  PedometerDb() {
-    stepProvider = StepProvider();
-    _channelPedometerDb = MethodChannelPedometerDb();
-    stepProvider?.initDatabase();
-    stepProvider?.initStepCountStream();
+  Future<void> initPlatformState() async {
+    await _stepProvider.initDatabase();
+    await _stepProvider.initStepCountStream();
   }
 
-
-  // initPlatformState() async {
-  //   stepProvider = StepProvider();
-  //   _channelPedometerDb = MethodChannelPedometerDb();
-  //   await stepProvider?.initDatabase();
-  //   await stepProvider?.initStepCountStream();
-  // }
-
   Future<int> queryPedometerData(int startTime, int endTime) async {
+    // print("queryPedometerData : $stepProvider, $_channelPedometerDb");
     if(Platform.isIOS) {
-      return await _channelPedometerDb?.queryPedometerDataFromOS(startTime, endTime) ?? 0;
+      return await _channelPedometerDb.queryPedometerDataFromOS(startTime, endTime) ?? 0;
     }
-    return await stepProvider?.queryPedometerData(startTime, endTime) ?? 0;
+    return await _stepProvider.queryPedometerData(startTime, endTime) ?? 0;
   }
 }
