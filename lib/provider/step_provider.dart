@@ -89,19 +89,20 @@ class StepProvider {
       //db상 첫번째 데이터를 가져온다
       firstNoExist = true;
       firstMaps = await db?.rawQuery('SELECT * from $tableName limit 1');
-      if(firstMaps != null && firstMaps.isNotEmpty) {
-        firstStep = Step.fromMap(firstMaps.first);
-      }
+    }
+    if(firstMaps != null && firstMaps.isNotEmpty) {
+      firstStep = Step.fromMap(firstMaps.first);
     }
 
     if(lastMaps != null && lastMaps.isEmpty) {
       //db상 마지막 데이터를 가져온다
       lastNoExist = true;
       lastMaps = await db?.rawQuery('SELECT * from $tableName ORDER BY id desc limit 1');
-      if(lastMaps != null && lastMaps.isNotEmpty) {
-        lastStep = Step.fromMap(lastMaps.first);
-      }
     }
+    if(lastMaps != null && lastMaps.isNotEmpty) {
+      lastStep = Step.fromMap(lastMaps.first);
+    }
+
     debugPrint("** lastStep: ${lastStep?.steps}, fristStep: ${firstStep?.steps}");
     //값 없을때 예상값 조회 시간 보정
     if(firstNoExist) { startTime = firstStep?.timestamp ?? startTime; }

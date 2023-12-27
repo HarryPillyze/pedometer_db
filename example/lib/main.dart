@@ -1,16 +1,16 @@
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+// import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+// import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:pedometer/pedometer.dart';
 import 'package:pedometer_db/pedometer_db.dart';
-import 'package:permission_handler/permission_handler.dart';
+// import 'package:permission_handler/permission_handler.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:intl/intl.dart';
 
@@ -41,14 +41,16 @@ void _initForegroundTask() {
 
 
 void _startForegroundService() {
-  _initForegroundTask();
   FlutterForegroundTask.isRunningService.then((value) {
+    debugPrint("** _startForegroundService : $value");
     if(value == true) {
       FlutterForegroundTask.restartService();
     } else {
       FlutterForegroundTask.startService(
-        notificationTitle: 'Foreground Service is running',
-        notificationText: 'Tap to return to the app',
+        // notificationTitle: 'Foreground Service is running',
+        // notificationText: 'Tap to return to the app',
+        notificationTitle: '걸음수보다 더 크게 쌓이는 행복',
+        notificationText: '오늘도 행복한 하루 되세요',
         callback: foregroundStartCallback,
       );
     }
@@ -68,9 +70,31 @@ Future<void> _requestPermissionForAndroid() async {
   }
 }
 
-// 1. work manager가 alram manager를 15분마다 실행시킴 (앱이 중단된 상태여도 깨워서 동작시킴)
-// 2. alarm manager가 1분마다 forground task를 실행시킴
-// 3. forground task 에서 센서값을 읽어서 db에 갱신함. 그리고 local notification 으로 사용자에게 알림. 그리고 forground task 종료시킴
+/*** 기존 로직
+ Android의 경우
+ startTime, endTime 조회시 db에서 예상값을 읽어옴
+ - db값 갱신 로직
+ 1. work manager가 alram manager를 15분마다 실행시킴 (앱이 중단된 상태여도 깨워서 동작시킴)
+ 2. alarm manager가 1분마다 forground task를 실행시킴
+ 3. forground task 에서 센서값을 읽어서 db에 갱신함.
+ 4. 그리고 local notification 으로 사용자에게 알림. 그리고 forground task 종료시킴 (3번이 정상동작하면 4번은 굳이 안해도 될 듯)
+
+ ios의 경우
+ startTime, endTime 조회시 os에서 값을 읽어옴
+***/
+
+/*** 바뀐 로직
+    Android의 경우
+    startTime, endTime 조회시 db에서 예상값을 읽어옴
+    - db값 갱신 로직
+    1. work manager가 forground task를 15분마다 실행시킴 (앱이 중단된 상태여도 깨워서 동작시킴)
+    2. forground task 에서 센서값을 읽어서 db에 갱신함.
+
+    ios의 경우
+    startTime, endTime 조회시 os에서 값을 읽어옴
+ ***/
+
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -88,14 +112,14 @@ void main() async {
     );
 
     //alarm manager 초기화
-    await AndroidAlarmManager.initialize();
+    // await AndroidAlarmManager.initialize();
     //local notification 초기화
-    const InitializationSettings initializationSettings = InitializationSettings(
-      android: AndroidInitializationSettings('ic_launcher'), //android project의 main/res/drawable 안에 있음
-    );
-    await flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
-    );
+    // const InitializationSettings initializationSettings = InitializationSettings(
+    //   android: AndroidInitializationSettings('ic_launcher'), //android project의 main/res/drawable 안에 있음
+    // );
+    // await flutterLocalNotificationsPlugin.initialize(
+    //   initializationSettings,
+    // );
   }
 
 
@@ -103,19 +127,23 @@ void main() async {
 
   if (Platform.isAndroid) {
     //alarm manager로 1분마다 forground task 실행
-    AndroidAlarmManager.periodic(const Duration(minutes: 1), alarmTaskId, _startForegroundService);
+    // AndroidAlarmManager.periodic(const Duration(minutes: 1), alarmTaskId, _startForegroundService);
+    _initForegroundTask();
     await _requestPermissionForAndroid();
+    _startForegroundService();
   }
 }
 
-int alarmTaskId = 10; //나중에 cancel 에 사용될 수 있음
+// int alarmTaskId = 10; //나중에 cancel 에 사용될 수 있음
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) {
     print("** Workmanager executeTask");
-    AndroidAlarmManager.initialize().then((value) {
-      AndroidAlarmManager.periodic(const Duration(minutes: 1), alarmTaskId, _startForegroundService);
-    });
+    // AndroidAlarmManager.initialize().then((value) {
+    //   AndroidAlarmManager.periodic(const Duration(minutes: 1), alarmTaskId, _startForegroundService);
+    // });
+    _initForegroundTask();
+    _startForegroundService();
     return Future.value(true);
   });
 }
@@ -133,30 +161,35 @@ void insertDataWithNotification(StepCount event) {
       DateTime startOfDay = DateTime(now.year, now.month, now.day);
       DateTime endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59, 999, 999);
       _pedometerDB.queryPedometerData(startOfDay.millisecondsSinceEpoch, endOfDay.millisecondsSinceEpoch).then((steps) {
-        showAndroidNotification(steps);
-        FlutterForegroundTask.stopService();
+        showAndroidNotification(steps).then((value) {
+          // FlutterForegroundTask.stopService();
+        });
       });
     });
   });
 }
 
-int id = 0;
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-FlutterLocalNotificationsPlugin();
-void showAndroidNotification(int? steps) {
+// int id = 0;
+// final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+Future<bool> showAndroidNotification(int? steps) async {
   debugPrint("** showAndroidNotification : $steps");
 
-  const AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
-      'example_steps_id',  //channel id
-      'example_steps_name', //channel name
-      channelDescription: 'steps count for android');
-  const NotificationDetails notificationDetails =
-  NotificationDetails(android: androidNotificationDetails);
-  flutterLocalNotificationsPlugin.show(
-    id,
-    '걸음수보다 더 크게 쌓이는 행복',
-    '오늘의 걸음수 : ${NumberFormat.decimalPattern().format(steps ?? 100)}',
-    notificationDetails,
+  // const AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
+  //     'example_steps_id',  //channel id
+  //     'example_steps_name', //channel name
+  //     channelDescription: 'steps count for android');
+  // const NotificationDetails notificationDetails =
+  // NotificationDetails(android: androidNotificationDetails);
+  // flutterLocalNotificationsPlugin.show(
+  //   id,
+  //   '걸음수보다 더 크게 쌓이는 행복',
+  //   '오늘의 걸음수 : ${NumberFormat.decimalPattern().format(steps ?? 100)}',
+  //   notificationDetails,
+  // );
+
+  return FlutterForegroundTask.updateService(
+    notificationTitle: '걸음수보다 더 크게 쌓이는 행복',
+    notificationText: '오늘의 걸음수 : ${NumberFormat.decimalPattern().format(steps ?? 100)}',
   );
 }
 

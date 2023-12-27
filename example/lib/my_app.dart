@@ -1,13 +1,9 @@
 
-import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import 'package:flutter_foreground_task/models/notification_permission.dart';
 import 'package:pedometer/pedometer.dart';
 import 'package:pedometer_db/pedometer_db.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:workmanager/workmanager.dart';
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
