@@ -49,12 +49,10 @@ void _startForegroundService() {
       FlutterForegroundTask.startService(
         notificationTitle: 'Foreground Service is running',
         notificationText: 'Tap to return to the app',
-        callback: startCallback,
+        callback: foregroundStartCallback,
       );
     }
   });
-
-
 }
 
 
@@ -70,6 +68,9 @@ Future<void> _requestPermissionForAndroid() async {
   }
 }
 
+// 1. work manager가 alram manager를 15분마다 실행시킴 (앱이 중단된 상태여도 깨워서 동작시킴)
+// 2. alarm manager가 1분마다 forground task를 실행시킴
+// 3. forground task 에서 센서값을 읽어서 db에 갱신함. 그리고 local notification 으로 사용자에게 알림. 그리고 forground task 종료시킴
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -108,17 +109,12 @@ void main() async {
 }
 
 int alarmTaskId = 10; //나중에 cancel 에 사용될 수 있음
-
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) {
     print("** Workmanager executeTask");
     AndroidAlarmManager.initialize().then((value) {
-      // AndroidAlarmManager.periodic(const Duration(minutes: 1), alarmTaskId, readStepSensor);
       AndroidAlarmManager.periodic(const Duration(minutes: 1), alarmTaskId, _startForegroundService);
-      // AndroidAlarmManager.cancel(alarmTaskId).then((value) {
-      //   AndroidAlarmManager.periodic(const Duration(minutes: 1), alarmTaskId, localNotificationEveryMinute);
-      // });
     });
     return Future.value(true);
   });
@@ -127,11 +123,11 @@ void callbackDispatcher() {
 
 // forground task 로 실행되는 로직 - 센서값을 얻어오려면 forground task 이거나 화면이 보여야 함
 void insertDataWithNotification(StepCount event) {
-  print("** read steps count by sensor : ${event.steps}");
+  debugPrint("** read steps count by sensor : ${event.steps}");
   final _pedometerDB = PedometerDb();
   _pedometerDB.initialize().then((value) {
     _pedometerDB.insertPedometerData(event).then((value) {
-      print("** insertPedometerData : ${value}");
+      debugPrint("** insertPedometerData : ${value}");
       //데이터를 db에 넣었으면 notification 하자
       DateTime now = DateTime.now();
       DateTime startOfDay = DateTime(now.year, now.month, now.day);
@@ -148,17 +144,17 @@ int id = 0;
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 FlutterLocalNotificationsPlugin();
 void showAndroidNotification(int? steps) {
-  print("** showAndroidNotification : $steps");
+  debugPrint("** showAndroidNotification : $steps");
 
   const AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
-      'galaxia_steps_id',  //channel id
-      'galaxia_steps_name', //channel name
+      'example_steps_id',  //channel id
+      'example_steps_name', //channel name
       channelDescription: 'steps count for android');
   const NotificationDetails notificationDetails =
   NotificationDetails(android: androidNotificationDetails);
   flutterLocalNotificationsPlugin.show(
     id,
-    '걸음수보다 더 크게 코인 쌓이는 앱테크',
+    '걸음수보다 더 크게 쌓이는 행복',
     '오늘의 걸음수 : ${NumberFormat.decimalPattern().format(steps ?? 100)}',
     notificationDetails,
   );
@@ -167,7 +163,7 @@ void showAndroidNotification(int? steps) {
 
 // 등록된 forground task가 시작되는 부분
 @pragma('vm:entry-point')
-void startCallback() {
+void foregroundStartCallback() {
   FlutterForegroundTask.setTaskHandler(SensorReadTaskHandler());
 }
 
