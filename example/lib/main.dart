@@ -126,11 +126,11 @@ void main() async {
       isInDebugMode: false // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
   );
   //15분마다 alarm manager 깨우기
-  // Workmanager().registerPeriodicTask(
-  //   "task-identifier",
-  //   "simpleTask",
-  //   frequency: const Duration(minutes: 15),
-  // );
+  Workmanager().registerPeriodicTask(
+    "task-identifier",
+    "simpleTask",
+    frequency: const Duration(minutes: 15),
+  );
   Workmanager().registerOneOffTask(
     "task-identifier",
     "simpleTask",
