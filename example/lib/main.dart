@@ -19,6 +19,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   // String _platformVersion = 'Unknown';
   final _pedometerDB = PedometerDb();
+  // fianl temp = Pedo
   int _stepCount = 0;
   // int _lastTime = DateTime.now().microsecondsSinceEpoch;
 

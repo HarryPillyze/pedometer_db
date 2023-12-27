@@ -7,6 +7,7 @@
 
 import 'dart:io';
 
+import 'package:pedometer/pedometer.dart';
 import 'package:pedometer_db/provider/step_provider.dart';
 
 import 'package:flutter/services.dart';
@@ -20,7 +21,7 @@ class PedometerDb {
 
   Future<void> initPlatformState() async {
     await _stepProvider.initDatabase();
-    await _stepProvider.initStepCountStream();
+    // await _stepProvider.initStepCountStream();
   }
 
   Future<int> queryPedometerData(int startTime, int endTime) async {
@@ -29,5 +30,9 @@ class PedometerDb {
       return await _channelPedometerDb.queryPedometerDataFromOS(startTime, endTime) ?? 0;
     }
     return await _stepProvider.queryPedometerData(startTime, endTime) ?? 0;
+  }
+
+  Future<int> insertPedometerData(StepCount event) async {
+    return await _stepProvider.insertData(event) ?? 0;
   }
 }

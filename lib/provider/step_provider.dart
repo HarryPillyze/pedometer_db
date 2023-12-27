@@ -8,7 +8,7 @@ final String tableName = 'steps';
 
 class StepProvider {
   Database? db;
-  Stream<StepCount>? _stepCountStream;
+  // Stream<StepCount>? _stepCountStream;
 
   Future initDatabase() async {
     var databasesPath = await getDatabasesPath();
@@ -157,19 +157,19 @@ class StepProvider {
   Future close() async => db?.close();
 }
 
-extension StepPedometer on StepProvider {
-
-  initStepCountStream() async {
-    _stepCountStream = Pedometer.stepCountStream;
-    _stepCountStream?.listen(_onStepDeltaSaveToDB).onError((err) {
-      print("stepCountStream error");
-    });
-  }
-
-
-  Future<void> _onStepDeltaSaveToDB(StepCount event) async {
-
-    int? index = await insertData(event);
-    print("*** insertData : ${event.steps}, ${event.timeStamp}, $index");
-  }
-}
+// extension StepPedometer on StepProvider {
+//
+//   initStepCountStream() async {
+//     _stepCountStream = Pedometer.stepCountStream;
+//     _stepCountStream?.listen(_onStepDeltaSaveToDB).onError((err) {
+//       print("stepCountStream error");
+//     });
+//   }
+//
+//
+//   Future<void> _onStepDeltaSaveToDB(StepCount event) async {
+//
+//     int? index = await insertData(event);
+//     print("*** insertData : ${event.steps}, ${event.timeStamp}, $index");
+//   }
+// }

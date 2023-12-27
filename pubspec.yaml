@@ -1,6 +1,6 @@
 name: pedometer_db
-description: "pedometer data query by startTime, endTime"
-version: 0.0.5
+description: "pedometer db for insert, select"
+version: 0.0.6
 homepage: https://github.com/rupy1014/pedometer_db
 repository: https://github.com/rupy1014/pedometer_db
 
