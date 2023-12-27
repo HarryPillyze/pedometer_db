@@ -17,6 +17,7 @@ dependencies:
   flutter:
     sdk: flutter
 
+  pedometer: ^4.0.1
   pedometer_db:
     # When depending on this package from a real application you should use:
     #   pedometer_db: ^x.y.z
@@ -29,6 +30,11 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
   permission_handler: ^11.1.0
+  flutter_foreground_task: ^6.1.2
+  flutter_local_notifications: ^16.2.0
+  workmanager: ^0.5.2
+  android_alarm_manager_plus: ^3.0.4
+  intl: ^0.18.1
 
 dev_dependencies:
   integration_test:

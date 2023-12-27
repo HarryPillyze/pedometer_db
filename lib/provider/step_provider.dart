@@ -39,19 +39,6 @@ class StepProvider {
     ''');
   }
 
-  // Future<Step> insert(Step step) async {
-  //   step.id = await db?.insert(tableStep, step.toMap());
-  //   return step;
-  // }
-
-  // Future<Step?> getStep(int id) async {
-  //   List<Map<String, Object?>>? maps = await db?.query(tableStep,
-  //       columns: ['id', 'delta_steps', 'steps', 'timestamp'],
-  //       where: 'id = ?',
-  //       whereArgs: [id]);
-  //   if (maps == null) return null;
-  //   return Step.fromMap(maps.first);
-  // }
 
   Future<int?> insertData(StepCount event) async {
     Step? lastStep = await getLastStep();
@@ -59,8 +46,6 @@ class StepProvider {
     int delta_steps = 0;
     int steps = event.steps;
     int timestamp = event.timeStamp.millisecondsSinceEpoch;
-
-
 
     if(lastStep != null) {
       //어플 처음 실행이 아닐 경우

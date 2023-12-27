@@ -19,7 +19,7 @@ class PedometerDb {
   final _stepProvider = StepProvider();
 
 
-  Future<void> initPlatformState() async {
+  Future<void> initialize() async {
     await _stepProvider.initDatabase();
     // await _stepProvider.initStepCountStream();
   }
@@ -29,7 +29,7 @@ class PedometerDb {
     if(Platform.isIOS) {
       return await _channelPedometerDb.queryPedometerDataFromOS(startTime, endTime) ?? 0;
     }
-    return await _stepProvider.queryPedometerData(startTime, endTime) ?? 0;
+    return await _stepProvider.queryPedometerData(startTime, endTime);
   }
 
   Future<int> insertPedometerData(StepCount event) async {
