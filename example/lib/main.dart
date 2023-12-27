@@ -17,31 +17,22 @@ import 'package:intl/intl.dart';
 import 'my_app.dart';
 
 void _initForegroundTask() {
+  if (!Platform.isAndroid) {
+    return;
+  }
   FlutterForegroundTask.init(
     androidNotificationOptions: AndroidNotificationOptions(
       channelId: 'foreground_service',
       channelName: 'Foreground Service Notification',
-      channelDescription: 'This notification appears when the foreground service is running.',
       channelImportance: NotificationChannelImportance.LOW,
       priority: NotificationPriority.LOW,
-      iconData: const NotificationIconData(
-        resType: ResourceType.mipmap,
-        resPrefix: ResourcePrefix.ic,
-        name: 'launcher',
-      ),
-      buttons: [
-        const NotificationButton(id: 'sendButton', text: 'Send'),
-        const NotificationButton(id: 'testButton', text: 'Test'),
-      ],
     ),
     iosNotificationOptions: const IOSNotificationOptions(
-      showNotification: true,
-      playSound: false,
     ),
     foregroundTaskOptions: const ForegroundTaskOptions(
       interval: 5000,
-      isOnceEvent: false,
-      autoRunOnBoot: true,
+      isOnceEvent: true,
+      autoRunOnBoot: false,
       allowWakeLock: true,
       allowWifiLock: true,
     ),
@@ -49,47 +40,8 @@ void _initForegroundTask() {
 }
 
 
-ReceivePort? _receivePort;
-bool _registerReceivePort(ReceivePort? newReceivePort) {
-  if (newReceivePort == null) {
-    return false;
-  }
-
-  _closeReceivePort();
-
-  _receivePort = newReceivePort;
-  _receivePort?.listen((data) {
-    if (data is int) {
-      print('eventCount: $data');
-    } else if (data is String) {
-      // if (data == 'onNotificationPressed') {
-      //   Navigator.of(context).pushNamed('/resume-route');
-      // }
-    } else if (data is DateTime) {
-      print('timestamp: ${data.toString()}');
-    }
-  });
-
-  return _receivePort != null;
-}
-
-void _closeReceivePort() {
-  _receivePort?.close();
-  _receivePort = null;
-}
-
 void _startForegroundService() {
   _initForegroundTask();
-  print("** _startForegroundService");
-
-  // Register the receivePort before starting the service.
-  final ReceivePort? receivePort = FlutterForegroundTask.receivePort;
-  final bool isRegistered = _registerReceivePort(receivePort);
-  if (!isRegistered) {
-    print('Failed to register receivePort!');
-    return  ;
-  }
-
   FlutterForegroundTask.isRunningService.then((value) {
     if(value == true) {
       FlutterForegroundTask.restartService();
@@ -121,6 +73,7 @@ Future<void> _requestPermissionForAndroid() async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  //workmanager 초기화
   await Workmanager().initialize(
       callbackDispatcher, // The top level function, aka callbackDispatcher
       isInDebugMode: false // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
@@ -131,12 +84,10 @@ void main() async {
     "simpleTask",
     frequency: const Duration(minutes: 15),
   );
-  Workmanager().registerOneOffTask(
-    "task-identifier",
-    "simpleTask",
-  );
 
+  //alarm manager 초기화
   await AndroidAlarmManager.initialize();
+  //local notification 초기화
   const InitializationSettings initializationSettings = InitializationSettings(
     android: AndroidInitializationSettings('ic_launcher'), //android project의 main/res/drawable 안에 있음
   );
@@ -145,7 +96,8 @@ void main() async {
   );
 
   runApp(const MyApp());
-  // AndroidAlarmManager.periodic(const Duration(minutes: 1), alarmTaskId, readStepSensor);
+
+  //alarm manager로 1분마다 forground task 실행
   AndroidAlarmManager.periodic(const Duration(minutes: 1), alarmTaskId, _startForegroundService);
   await _requestPermissionForAndroid();
 }
@@ -155,8 +107,8 @@ int alarmTaskId = 10; //나중에 cancel 에 사용될 수 있음
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) {
+    print("** Workmanager executeTask");
     AndroidAlarmManager.initialize().then((value) {
-      _startForegroundService();
       // AndroidAlarmManager.periodic(const Duration(minutes: 1), alarmTaskId, readStepSensor);
       AndroidAlarmManager.periodic(const Duration(minutes: 1), alarmTaskId, _startForegroundService);
       // AndroidAlarmManager.cancel(alarmTaskId).then((value) {
@@ -168,15 +120,8 @@ void callbackDispatcher() {
 }
 
 
-//참고1: https://pub.dev/packages/android_alarm_manager_plus
-@pragma('vm:entry-point') // Mandatory if the App is obfuscated or using Flutter 3.1+
-void readStepSensor() {
-  Pedometer.stepCountStream.listen(insertDataWithNotification);
-
-}
-
+// forground task 로 실행되는 로직 - 센서값을 얻어오려면 forground task 이거나 화면이 보여야 함
 void insertDataWithNotification(StepCount event) {
-
   print("** read steps count by sensor : ${event.steps}");
   final _pedometerDB = PedometerDb();
   _pedometerDB.initialize().then((value) {
@@ -212,69 +157,39 @@ void showAndroidNotification(int? steps) {
     '오늘의 걸음수 : ${NumberFormat.decimalPattern().format(steps ?? 100)}',
     notificationDetails,
   );
-
-  // FlutterForegroundTask.updateService(
-  //   notificationTitle: '걸음수보다 더 크게 코인 쌓이는 앱테크',
-  //   notificationText: '오늘의 걸음수 : ${NumberFormat.decimalPattern().format(steps ?? 0)}',
-  // );
 }
 
 
-// The callback function should always be a top-level function.
+// 등록된 forground task가 시작되는 부분
 @pragma('vm:entry-point')
 void startCallback() {
-  print("** startCallback");
-  // The setTaskHandler function must be called to handle the task in the background.
-  FlutterForegroundTask.setTaskHandler(FirstTaskHandler());
+  FlutterForegroundTask.setTaskHandler(SensorReadTaskHandler());
 }
 
 
-class FirstTaskHandler extends TaskHandler {
-  SendPort? _sendPort;
-
+class SensorReadTaskHandler extends TaskHandler {
   // Called when the task is started.
   @override
   void onStart(DateTime timestamp, SendPort? sendPort) async {
-    _sendPort = sendPort;
-
-
-    // You can use the getData function to get the stored data.
-    final customData =
-    await FlutterForegroundTask.getData<String>(key: 'customData');
-    print('** FirstTaskHandler customData: $customData');
-
     Pedometer.stepCountStream.listen(insertDataWithNotification);
   }
 
   // Called every [interval] milliseconds in [ForegroundTaskOptions].
   @override
   void onRepeatEvent(DateTime timestamp, SendPort? sendPort) async {
-    // Send data to the main isolate.
-    // sendPort?.send(timestamp);
   }
 
   // Called when the notification button on the Android platform is pressed.
   @override
   void onDestroy(DateTime timestamp, SendPort? sendPort) async {
-
   }
 
   // Called when the notification button on the Android platform is pressed.
   @override
   void onNotificationButtonPressed(String id) {
-    print('onNotificationButtonPressed >> $id');
   }
 
-  // Called when the notification itself on the Android platform is pressed.
-  //
-  // "android.permission.SYSTEM_ALERT_WINDOW" permission must be granted for
-  // this function to be called.
   @override
   void onNotificationPressed() {
-    // Note that the app will only route to "/resume-route" when it is exited so
-    // it will usually be necessary to send a message through the send port to
-    // signal it to restore state when the app is already started.
-    // FlutterForegroundTask.launchApp("/resume-route");
-    // _sendPort?.send('onNotificationPressed');
   }
 }
