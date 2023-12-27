@@ -31,7 +31,7 @@ void _initForegroundTask() {
     ),
     foregroundTaskOptions: const ForegroundTaskOptions(
       interval: 5000,
-      isOnceEvent: true,
+      isOnceEvent: false,
       autoRunOnBoot: false,
       allowWakeLock: true,
       allowWifiLock: true,
@@ -73,33 +73,38 @@ Future<void> _requestPermissionForAndroid() async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  //workmanager 초기화
-  await Workmanager().initialize(
-      callbackDispatcher, // The top level function, aka callbackDispatcher
-      isInDebugMode: false // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
-  );
-  //15분마다 alarm manager 깨우기
-  Workmanager().registerPeriodicTask(
-    "task-identifier",
-    "simpleTask",
-    frequency: const Duration(minutes: 15),
-  );
+  if (Platform.isAndroid) {
+    //workmanager 초기화
+    await Workmanager().initialize(
+        callbackDispatcher, // The top level function, aka callbackDispatcher
+        isInDebugMode: false // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
+    );
+    //15분마다 alarm manager 깨우기
+    Workmanager().registerPeriodicTask(
+      "task-identifier",
+      "simpleTask",
+      frequency: const Duration(minutes: 15),
+    );
 
-  //alarm manager 초기화
-  await AndroidAlarmManager.initialize();
-  //local notification 초기화
-  const InitializationSettings initializationSettings = InitializationSettings(
-    android: AndroidInitializationSettings('ic_launcher'), //android project의 main/res/drawable 안에 있음
-  );
-  await flutterLocalNotificationsPlugin.initialize(
-    initializationSettings,
-  );
+    //alarm manager 초기화
+    await AndroidAlarmManager.initialize();
+    //local notification 초기화
+    const InitializationSettings initializationSettings = InitializationSettings(
+      android: AndroidInitializationSettings('ic_launcher'), //android project의 main/res/drawable 안에 있음
+    );
+    await flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+    );
+  }
+
 
   runApp(const MyApp());
 
-  //alarm manager로 1분마다 forground task 실행
-  AndroidAlarmManager.periodic(const Duration(minutes: 1), alarmTaskId, _startForegroundService);
-  await _requestPermissionForAndroid();
+  if (Platform.isAndroid) {
+    //alarm manager로 1분마다 forground task 실행
+    AndroidAlarmManager.periodic(const Duration(minutes: 1), alarmTaskId, _startForegroundService);
+    await _requestPermissionForAndroid();
+  }
 }
 
 int alarmTaskId = 10; //나중에 cancel 에 사용될 수 있음
