@@ -131,10 +131,11 @@ void main() async {
     _initForegroundTask();
     await _requestPermissionForAndroid();
     _startForegroundService();
+    FlutterForegroundTask.setTaskHandler(SensorReadTaskHandler());
   }
 }
 
-// int alarmTaskId = 10; //나중에 cancel 에 사용될 수 있음
+
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) {
@@ -155,7 +156,6 @@ void insertDataWithNotification(StepCount event) {
   final _pedometerDB = PedometerDb();
   _pedometerDB.initialize().then((value) {
     _pedometerDB.insertPedometerData(event).then((value) {
-      debugPrint("** insertPedometerData : ${value}");
       //데이터를 db에 넣었으면 notification 하자
       DateTime now = DateTime.now();
       DateTime startOfDay = DateTime(now.year, now.month, now.day);

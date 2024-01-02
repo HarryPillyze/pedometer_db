@@ -2,14 +2,16 @@
 
 class Step {
   int? id;
-  int? delta_steps;
-  int? steps;
+  int? total;
+  int? last;
+  int? plus;
   int? timestamp;
 
   Map<String, Object?> toMap() {
     var map = <String, Object?> {
-      "delta_steps": delta_steps,
-      "steps": steps,
+      "total": total,
+      "last": last,
+      "plus": plus,
       "timestamp": timestamp,
     };
     if (id != null) {
@@ -22,8 +24,9 @@ class Step {
 
   Step.fromMap(Map<String, Object?> map) {
     id = int.parse("${map["id"] ?? 0}");
-    delta_steps = int.parse("${map["delta_steps"] ?? 0}");
-    steps = int.parse("${map["steps"] ?? 0}");
+    total = int.parse("${map["total"] ?? 0}");
+    last = int.parse("${map["last"] ?? 0}");
+    plus = int.parse("${map["plus"] ?? 0}");
     timestamp = int.parse("${map["timestamp"] ?? 0}");
   }
 }

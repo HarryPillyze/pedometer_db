@@ -27,9 +27,10 @@ class StepProvider {
   Future _createDatabase(Database db, int version) async {
     await db.execute('''
     CREATE TABLE IF NOT EXISTS steps (
-      id INTEGER PRIMARY KEY,
-      delta_steps INTEGER NOT NULL,
-      steps INTEGER NOT NULL,
+      id INTEGER PRIMARY KEY, 
+      total INTEGER NOT NULL,
+      last INTEGER NOT NULL,
+      plus INTEGER NOT NULL,
       timestamp INTEGER NOT NULL
     )
   ''');
@@ -44,30 +45,36 @@ class StepProvider {
   Future<int?> insertData(StepCount event) async {
     Step? lastStep = await getLastStep();
 
-    int delta_steps = 0;
-    int steps = event.steps;
+    int last = event.steps;
+    int plus = lastStep?.plus ?? 0;
+    int total = event.steps;
     int timestamp = event.timeStamp.millisecondsSinceEpoch;
 
     //어플 처음 실행이 아닐 경우
     if(lastStep != null) {
       //재부팅이 되었을 경우, 재부팅 시점의 걸음값을 정확히 모르는 상태에서 초기화 해야함
-      if((lastStep.steps ?? 0) > event.steps) {
-        delta_steps = event.steps;
-        steps = (lastStep.steps ?? 0) + event.steps;
+      if((lastStep.last ?? 0) > event.steps) {
+        // delta_steps = event.steps;
+        // steps = (lastStep.steps ?? 0) + event.steps;
+        // 0부터 시작
+        total = lastStep.total ?? 0;
+        plus = lastStep.total ?? 0; //더해야 할 값 재조정
+
       } else {
         //재부팅이 되지 않고 계속 쌓일 경우
-        delta_steps = event.steps - (lastStep.steps ?? 0);
+        total = event.steps + plus;
       }
     }
 
-    debugPrint("** insertData delta: ${delta_steps}, steps: ${steps}, lastStep: ${lastStep?.steps}");
+    debugPrint("** insertData last: ${last}, plus: ${plus}, total: ${total}, steps: ${event.steps}, timestamp: ${timestamp}");
 
     return await db?.insert(
       tableName,  // table name
       {
-        'delta_steps': delta_steps,
-        'steps': steps,
+        'total': total,
+        'last': last,
         'timestamp': timestamp,
+        'plus': plus,
       },  // new post row data
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -77,8 +84,8 @@ class StepProvider {
 
   Future<int> queryPedometerData(int startTime, int endTime) async {
     //db 범위밖 1개씩 가져와서 데이터를 조합해야함
-    List<Map<String, Object?>>? firstMaps = await db?.rawQuery('SELECT * from $tableName where timestamp < $startTime ORDER BY id desc limit 1');
-    List<Map<String, Object?>>? lastMaps = await db?.rawQuery('SELECT * from $tableName where timestamp > $endTime limit 1');
+    List<Map<String, Object?>>? firstMaps = await db?.rawQuery('SELECT * from $tableName where timestamp >= $startTime limit 1');
+    List<Map<String, Object?>>? lastMaps = await db?.rawQuery('SELECT * from $tableName where timestamp < $endTime ORDER BY id desc limit 1');
 
     Step? firstStep;
     Step? lastStep;
@@ -103,21 +110,22 @@ class StepProvider {
       lastStep = Step.fromMap(lastMaps.first);
     }
 
-    debugPrint("** lastStep: ${lastStep?.steps}, fristStep: ${firstStep?.steps}");
+    debugPrint("** lastTotal: ${lastStep?.total}, firstTotal: ${firstStep?.total}");
     //값 없을때 예상값 조회 시간 보정
     if(firstNoExist) { startTime = firstStep?.timestamp ?? startTime; }
     if(lastNoExist) { endTime = lastStep?.timestamp ?? endTime; }
 
-    int realDataStep = (lastStep?.steps ?? 0) - (firstStep?.steps ?? 0);
-    int realDataDuration = (lastStep?.timestamp ?? 0) - (firstStep?.timestamp ?? 0);
-    if(realDataDuration == 0) realDataDuration = 1; //0으로 나누지 않게 예외처리
+    int realDataStep = (lastStep?.total ?? 0) - (firstStep?.total ?? 0);
+    // int realDataDuration = (lastStep?.timestamp ?? 0) - (firstStep?.timestamp ?? 0);
+    // if(realDataDuration == 0) realDataDuration = 1; //0으로 나누지 않게 예외처리
 
-    double percent = (endTime - startTime) / realDataDuration; //예상 데이터를 구하기 위한 환산된 비율
+    // double percent = (endTime - startTime) / realDataDuration; //예상 데이터를 구하기 위한 환산된 비율
     //기록 걸음수
 
-    debugPrint("** startTime: $startTime, endTime: $endTime, diff: ${endTime - startTime}, realDataStep: ${realDataStep}, realDataTimestamp: ${realDataDuration}, percent: $percent");
+    debugPrint("** startTime: $startTime, endTime: $endTime, diff: ${endTime - startTime}, realDataStep: ${realDataStep}, plus: ${lastStep?.plus}, last: ${lastStep?.last}");
 
-    return (realDataStep * percent).toInt(); //예상값 리턴
+    // return (realDataStep * percent).toInt(); //예상값 리턴
+    return realDataStep; //실제값 리턴
   }
 
 
