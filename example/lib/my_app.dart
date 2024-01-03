@@ -41,9 +41,11 @@ class _MyAppState extends State<MyApp> {
       Permission.locationAlways,
       Permission.activityRecognition
     ].request();
-    Pedometer.stepCountStream.listen(_onStepDeltaSaveToDB).onError((err) {
-      print("stepCountStream error");
-    });
+
+    //만약 여기서 선언하면, 이벤트를 가져가서 main.dart에서 실행하는 notification이 갱신이 안될 수 있음
+    // Pedometer.stepCountStream.listen(_onStepDeltaSaveToDB).onError((err) {
+    //   print("stepCountStream error");
+    // });
     // _pedometerDB.initPlatformState();
   }
 

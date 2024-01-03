@@ -40,21 +40,22 @@ void _initForegroundTask() {
 }
 
 
-void _startForegroundService() {
-  FlutterForegroundTask.isRunningService.then((value) {
-    debugPrint("** _startForegroundService : $value");
-    if(value == true) {
-      FlutterForegroundTask.restartService();
-    } else {
-      FlutterForegroundTask.startService(
-        // notificationTitle: 'Foreground Service is running',
-        // notificationText: 'Tap to return to the app',
-        notificationTitle: '걸음수보다 더 크게 쌓이는 행복',
-        notificationText: '오늘도 행복한 하루 되세요',
-        callback: foregroundStartCallback,
-      );
-    }
-  });
+Future<void> _startForegroundService() async {
+  bool isRunning = await FlutterForegroundTask.isRunningService;
+  if(isRunning) {
+    await FlutterForegroundTask.restartService();
+    return;
+  } else {
+    await FlutterForegroundTask.startService(
+      // notificationTitle: 'Foreground Service is running',
+      // notificationText: 'Tap to return to the app',
+      notificationTitle: '걸음수보다 더 크게 쌓이는 행복',
+      notificationText: '오늘도 행복한 하루 되세요',
+      callback: foregroundStartCallback,
+    );
+    //처음일 경우 바로 모니터링 시작
+    Pedometer.stepCountStream.listen(insertDataWithNotification);
+  }
 }
 
 
@@ -130,8 +131,8 @@ void main() async {
     // AndroidAlarmManager.periodic(const Duration(minutes: 1), alarmTaskId, _startForegroundService);
     _initForegroundTask();
     await _requestPermissionForAndroid();
-    _startForegroundService();
-    FlutterForegroundTask.setTaskHandler(SensorReadTaskHandler());
+    await _startForegroundService();
+    // FlutterForegroundTask.setTaskHandler(SensorReadTaskHandler());
   }
 }
 
@@ -189,7 +190,7 @@ Future<bool> showAndroidNotification(int? steps) async {
 
   return FlutterForegroundTask.updateService(
     notificationTitle: '걸음수보다 더 크게 쌓이는 행복',
-    notificationText: '오늘의 걸음수 : ${NumberFormat.decimalPattern().format(steps ?? 100)}',
+    notificationText: '오늘의 걸음수 : ${NumberFormat.decimalPattern().format(steps ?? 0)}',
   );
 }
 
@@ -197,6 +198,7 @@ Future<bool> showAndroidNotification(int? steps) async {
 // 등록된 forground task가 시작되는 부분
 @pragma('vm:entry-point')
 void foregroundStartCallback() {
+  print("** foregroundStartCallback");
   FlutterForegroundTask.setTaskHandler(SensorReadTaskHandler());
 }
 
