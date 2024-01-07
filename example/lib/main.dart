@@ -71,30 +71,6 @@ Future<void> _requestPermissionForAndroid() async {
   }
 }
 
-/*** 기존 로직
- Android의 경우
- startTime, endTime 조회시 db에서 예상값을 읽어옴
- - db값 갱신 로직
- 1. work manager가 alram manager를 15분마다 실행시킴 (앱이 중단된 상태여도 깨워서 동작시킴)
- 2. alarm manager가 1분마다 forground task를 실행시킴
- 3. forground task 에서 센서값을 읽어서 db에 갱신함.
- 4. 그리고 local notification 으로 사용자에게 알림. 그리고 forground task 종료시킴 (3번이 정상동작하면 4번은 굳이 안해도 될 듯)
-
- ios의 경우
- startTime, endTime 조회시 os에서 값을 읽어옴
-***/
-
-/*** 바뀐 로직
-    Android의 경우
-    startTime, endTime 조회시 db에서 예상값을 읽어옴
-    - db값 갱신 로직
-    1. work manager가 forground task를 15분마다 실행시킴 (앱이 중단된 상태여도 깨워서 동작시킴)
-    2. forground task 에서 센서값을 읽어서 db에 갱신함.
-
-    ios의 경우
-    startTime, endTime 조회시 os에서 값을 읽어옴
- ***/
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
