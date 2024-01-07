@@ -20,6 +20,8 @@ void _initForegroundTask() {
   if (!Platform.isAndroid) {
     return;
   }
+  print("** _initForegroundTask");
+
   FlutterForegroundTask.init(
     androidNotificationOptions: AndroidNotificationOptions(
       channelId: 'foreground_service',
@@ -54,7 +56,7 @@ Future<void> _startForegroundService() async {
       callback: foregroundStartCallback,
     );
     //처음일 경우 바로 모니터링 시작
-    Pedometer.stepCountStream.listen(insertDataWithNotification);
+    // Pedometer.stepCountStream.listen(insertDataWithNotification);
   }
 }
 
@@ -81,11 +83,17 @@ void main() async {
         callbackDispatcher, // The top level function, aka callbackDispatcher
         isInDebugMode: false // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
     );
-    //15분마다 alarm manager 깨우기
+
     Workmanager().registerPeriodicTask(
       "task-identifier",
       "simpleTask",
       frequency: const Duration(minutes: 15),
+      initialDelay: const Duration(seconds: 1),
+      constraints: Constraints(
+        networkType: NetworkType.not_required,
+        requiresDeviceIdle: false,
+        requiresBatteryNotLow: true,
+      ),
     );
 
     //alarm manager 초기화
@@ -103,11 +111,13 @@ void main() async {
   runApp(const MyApp());
 
   if (Platform.isAndroid) {
+    await _requestPermissionForAndroid();
+
     //alarm manager로 1분마다 forground task 실행
     // AndroidAlarmManager.periodic(const Duration(minutes: 1), alarmTaskId, _startForegroundService);
-    _initForegroundTask();
-    await _requestPermissionForAndroid();
-    await _startForegroundService();
+    // _initForegroundTask();
+    // await _requestPermissionForAndroid();
+    // await _startForegroundService();
     // FlutterForegroundTask.setTaskHandler(SensorReadTaskHandler());
   }
 }
@@ -115,13 +125,13 @@ void main() async {
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
-  Workmanager().executeTask((task, inputData) {
+  Workmanager().executeTask((task, inputData) async {
     print("** Workmanager executeTask");
     // AndroidAlarmManager.initialize().then((value) {
     //   AndroidAlarmManager.periodic(const Duration(minutes: 1), alarmTaskId, _startForegroundService);
     // });
     _initForegroundTask();
-    _startForegroundService();
+    await _startForegroundService();
     return Future.value(true);
   });
 }
