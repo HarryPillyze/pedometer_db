@@ -84,10 +84,11 @@ class StepProvider {
 
   Future<int> queryPedometerData(int startTime, int endTime) async {
     //db 범위밖 1개씩 가져와서 데이터를 조합해야함
-    // List<Map<String, Object?>>? firstYesterdayMaps = await db?.rawQuery('SELECT * from $tableName where timestamp < $startTime limit 1');
+    List<Map<String, Object?>>? firstYesterdayMaps;
     List<Map<String, Object?>>? firstMaps = await db?.rawQuery('SELECT * from $tableName where timestamp >= $startTime limit 1');
     List<Map<String, Object?>>? lastMaps = await db?.rawQuery('SELECT * from $tableName where timestamp < $endTime ORDER BY id desc limit 1');
 
+    Step? firstYesterdayStep;
     Step? firstStep;
     Step? lastStep;
     bool firstNoExist = false; //조회일 이전의 값이 db상 없을때, 앱 설치 이전에 값을 조회하는 것이므로 첫번째 값을 가져오는데 활용
@@ -97,13 +98,22 @@ class StepProvider {
       //db상 첫번째 데이터를 가져온다
       firstNoExist = true;
       firstMaps = await db?.rawQuery('SELECT * from $tableName limit 1');
-    } else {
+    } else if(firstMaps != null && firstMaps.isNotEmpty) {
       //만약 오늘 기록된 값이 조금 늦어서 다른앱과 오차가 있다면 (15정도의 수준), 어제 마지막 기록값을 오늘 최초 걸음수로 가정하고 계산하여 오차를 줄여본다
-      firstMaps = await db?.rawQuery('SELECT * from $tableName where timestamp < $startTime ORDER BY id desc limit 1');
+      firstYesterdayMaps = await db?.rawQuery('SELECT * from $tableName where timestamp < $startTime ORDER BY id desc limit 1');
+      if(firstYesterdayMaps != null && firstYesterdayMaps.isNotEmpty) {
+        firstYesterdayStep = Step.fromMap(firstYesterdayMaps.first);
+      }
     }
 
     if(firstMaps != null && firstMaps.isNotEmpty) {
       firstStep = Step.fromMap(firstMaps.first);
+      if(firstYesterdayStep != null)  {
+        int diff = (firstStep.timestamp ?? 0) - (firstYesterdayStep.timestamp ?? 0);
+        if(diff > 0 && diff < 3600000) {  //1시간 이내의 오차라면
+          firstStep = firstYesterdayStep; //어제 마지막 기록값을 오늘 최초 걸음수로 가정
+        }
+      }
     }
 
     if(lastMaps != null && lastMaps.isEmpty) {
