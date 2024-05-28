@@ -93,9 +93,6 @@ class StepProvider {
       return 0;
     } else {
       int realDataStep = (lastStep?.total ?? 0) - (firstStep?.total ?? 0);
-      if (realDataStep < 0) {
-        return 0;
-      }
       return realDataStep < 0 ? 0 : realDataStep; //실제값 리턴
     }
   }
