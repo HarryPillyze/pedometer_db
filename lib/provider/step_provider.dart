@@ -4,15 +4,18 @@ import 'package:pedometer_db/model/step.dart';
 import 'package:sqflite/sqflite.dart';
 
 final String tableName = 'steps';
+final String tableNameAcc = 'Accelerometers';
 
 class StepProvider {
   Database? db;
+  Database? dbAcc;
 
   // Stream<StepCount>? _stepCountStream;
 
   Future initDatabase() async {
     var databasesPath = await getDatabasesPath();
     String path = "$databasesPath/pedometer_db.db";
+    String pathAcc = "$databasesPath/pedometer_dbAcc.db";
     db = await openDatabase(
       path,
       version: 1,
@@ -20,11 +23,18 @@ class StepProvider {
       onCreate: (Database db, int version) => _createDatabase(db, version),
       onUpgrade: (Database db, int oldVersion, int newVersion) => {},
     );
+    dbAcc = await openDatabase(
+      pathAcc,
+      version: 1,
+      onConfigure: (Database db) => {},
+      onCreate: (Database db, int version) => _createAccDatabase(db, version),
+      onUpgrade: (Database db, int oldVersion, int newVersion) => {},
+    );
   }
 
   Future _createDatabase(Database db, int version) async {
     await db.execute('''
-    CREATE TABLE IF NOT EXISTS steps (
+    CREATE TABLE IF NOT EXISTS $tableName (
       id INTEGER PRIMARY KEY, 
       total INTEGER NOT NULL,
       last INTEGER NOT NULL,
@@ -35,7 +45,24 @@ class StepProvider {
 
     //create index
     await db.execute('''
-    CREATE INDEX idx_timestamp ON steps (timestamp ASC)
+    CREATE INDEX idx_timestamp ON $tableName (timestamp ASC)
+    ''');
+  }
+
+  Future _createAccDatabase(Database db, int version) async {
+    await db.execute('''
+    CREATE TABLE IF NOT EXISTS $tableNameAcc (
+      id INTEGER PRIMARY KEY, 
+      total INTEGER NOT NULL,
+      last INTEGER NOT NULL,
+      plus INTEGER NOT NULL,
+      timestamp INTEGER NOT NULL
+    )
+  ''');
+
+    //create index
+    await db.execute('''
+    CREATE INDEX idx_timestamp ON $tableNameAcc (timestamp ASC)
     ''');
   }
 
@@ -76,7 +103,25 @@ class StepProvider {
     );
   }
 
+
+  Future<void> insertAccData(DateTime timeStamp) async {
+    Step? lastAccStep = await getLastAccStep();
+    int total = (lastAccStep?.total ?? 0) + 1;
+    debugPrint("** insertData total: $total, timestamp: ${timeStamp.millisecondsSinceEpoch}");
+    await dbAcc?.insert(
+      tableNameAcc, // table name
+      {
+        'total': total,
+        'last': 0,
+        'timestamp': timeStamp.millisecondsSinceEpoch,
+        'plus': 0,
+      }, // new post row data
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
   Future<int> queryPedometerData(int startTime, int endTime) async {
+    int stepCount = 0;
     List<Map<String, Object?>>? firstMaps = await db?.rawQuery('SELECT * from $tableName where timestamp >= $startTime limit 1');
     List<Map<String, Object?>>? lastMaps = await db?.rawQuery('SELECT * from $tableName where timestamp < $endTime ORDER BY id desc limit 1');
 
@@ -90,15 +135,46 @@ class StepProvider {
     }
 
     if ((firstStep?.total ?? 0) == 0 || (lastStep?.total ?? 0) == 0) {
-      return 0;
+      stepCount = 0;
     } else {
       int realDataStep = (lastStep?.total ?? 0) - (firstStep?.total ?? 0);
-      return realDataStep < 0 ? 0 : realDataStep; //실제값 리턴
+      stepCount = realDataStep < 0 ? 0 : realDataStep;
     }
+
+
+    //accCount
+    int stepAccCount = 0;
+    List<Map<String, Object?>>? firstAccMaps = await dbAcc?.rawQuery('SELECT * from $tableNameAcc where timestamp >= $startTime limit 1');
+    List<Map<String, Object?>>? lastAccMaps = await dbAcc?.rawQuery('SELECT * from $tableNameAcc where timestamp < $endTime ORDER BY id desc limit 1');
+
+    Step? firstAccStep;
+    Step? lastAccStep;
+    if (firstAccMaps != null && firstAccMaps.isNotEmpty) {
+      firstAccStep = Step.fromMap(firstAccMaps.first);
+    }
+    if (lastAccMaps != null && lastAccMaps.isNotEmpty) {
+      lastAccStep = Step.fromMap(lastAccMaps.first);
+    }
+
+    if ((firstAccStep?.total ?? 0) == 0 || (lastAccStep?.total ?? 0) == 0) {
+      stepAccCount = 0;
+    } else {
+      int realDataStep = (lastAccStep?.total ?? 0) - (firstAccStep?.total ?? 0);
+      stepAccCount = realDataStep < 0 ? 0 : realDataStep;
+    }
+    debugPrint("** stepCount total: $stepCount, stepAccCount: $stepAccCount");
+    return stepCount + stepAccCount;
   }
 
   Future<Step?> getLastStep() async {
     List<Map<String, Object?>>? maps = await db?.rawQuery('SELECT * from $tableName ORDER BY id DESC limit 1');
+    if (maps == null) return null;
+    if (maps.isEmpty) return null;
+    return Step.fromMap(maps.first);
+  }
+
+  Future<Step?> getLastAccStep() async {
+    List<Map<String, Object?>>? maps = await dbAcc?.rawQuery('SELECT * from $tableNameAcc ORDER BY id DESC limit 1');
     if (maps == null) return null;
     if (maps.isEmpty) return null;
     return Step.fromMap(maps.first);
